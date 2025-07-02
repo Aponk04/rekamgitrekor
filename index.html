@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Records Dashboard</title>
+    <!-- Link ke Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Link ke file CSS kustom -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 h-screen flex">
+
+<!-- Konten Utama Aplikasi -->
+<div class="flex-1 flex flex-col overflow-hidden">
+    <header class="bg-white shadow-sm">
+        <div class="flex items-center justify-between p-4">
+            <div class="flex items-center space-x-4">
+                <h2 class="text-xl font-semibold text-gray-800">Medical Records</h2>
+                 <button id="addVisitButton" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Jadwal Kunjungan Baru
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                 <!-- Elemen untuk Jam Real-Time -->
+                <div id="realTimeClock" class="hidden md:block text-sm font-medium text-gray-500 text-right"></div>
+                <div class="relative">
+                    <input type="text" id="mainSearchInput" placeholder="Cari pasien..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <button id="newRecordButton" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Pasien Baru
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">Total Pasien</p>
+                        <h3 id="total-patients-stat" class="text-xl font-bold text-gray-700">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">Kunjungan Hari Ini</p>
+                        <h3 id="visits-today-stat" class="text-xl font-bold text-gray-700">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
+                <div class="flex items-center">
+                    <div class="bg-yellow-100 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">Kunjungan Tertunda</p>
+                        <h3 id="pending-visits-stat" class="text-xl font-bold text-gray-700">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-500">Total Rekam Medis</p>
+                        <h3 id="total-records-stat" class="text-xl font-bold text-gray-700">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="p-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Pasien Terbaru</h3>
+            </div>
+            <div id="recent-patients-container" class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            </div>
+            <div class="p-4 border-t border-gray-200 text-center">
+                <button id="viewAllPatientsButton" class="text-blue-600 hover:text-blue-800 font-medium">Lihat Semua Pasien</button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Jadwal Kunjungan Hari Ini</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pasien</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alamat</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tindakan</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="upcoming-visits-tbody" class="bg-white divide-y divide-gray-200">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Semua Modal -->
+<!-- MODAL: Tambah Pasien Baru -->
+<div id="newPatientModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-gray-200">
+            <h3 class="text-xl font-semibold text-gray-800">Tambah Pasien Baru</h3>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6">
+            <form id="newPatientForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="mb-4">
+                            <label for="new-patient-name" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                            <input type="text" id="new-patient-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-4">
+                            <label for="new-patient-dob" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+                            <input type="text" id="new-patient-dob" placeholder="Contoh: 10 Jan 1980" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-4">
+                            <label for="new-patient-gender" class="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+                            <select id="new-patient-gender" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option>Laki-laki</option>
+                                <option>Perempuan</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="new-patient-diagnosis" class="block text-sm font-medium text-gray-700 mb-1">Diagnosis Utama</label>
+                            <input type="text" id="new-patient-diagnosis" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-4">
+                            <label for="new-patient-phone" class="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
+                            <input type="tel" id="new-patient-phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-4">
+                            <label for="new-patient-address" class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                            <textarea id="new-patient-address" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                         <div class="mb-4">
+                            <label for="new-patient-allergies" class="block text-sm font-medium text-gray-700 mb-1">Alergi</label>
+                            <input type="text" id="new-patient-allergies" placeholder="Kosongkan jika tidak ada" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end bg-gray-50">
+            <button id="cancelNewPatientButton" type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors mr-2">Batal</button>
+            <button id="saveNewPatientButton" type="submit" form="newPatientForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">Tambah Pasien</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Detail Rekam Medis Pasien -->
+<div id="patientRecordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
+            <h3 class="text-xl font-semibold text-gray-800" id="modalPatientName">Detail Rekam Medis Pasien</h3>
+            <button id="closeModalButtonHeader" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-4">
+                <div class="bg-white rounded-lg shadow mb-6">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                        <h4 class="font-semibold text-gray-800">Informasi Pasien</h4>
+                        <button id="deletePatientButton" class="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 transition-colors flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Hapus Data
+                        </button>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex mb-3"><span class="text-gray-500 w-32 shrink-0">Nama Lengkap:</span><span class="font-medium text-gray-800" id="modal-patient-fullname"></span></div>
+                            <div class="flex mb-3"><span class="text-gray-500 w-32 shrink-0">Tanggal Lahir:</span><span class="font-medium text-gray-800" id="modal-patient-dob"></span></div>
+                            <div class="flex mb-3"><span class="text-gray-500 w-32 shrink-0">Jenis Kelamin:</span><span class="font-medium text-gray-800" id="modal-patient-gender"></span></div>
+                            <div class="flex mb-3"><span class="text-gray-500 w-32 shrink-0">No. Telepon:</span><span class="font-medium text-gray-800" id="modal-patient-phone"></span></div>
+                        </div>
+                        <div>
+                            <div class="flex mb-3"><span class="text-gray-500 w-32 shrink-0">Alamat:</span><span class="font-medium text-gray-800" id="modal-patient-address"></span></div>
+                            <div class="flex mb-3"><span class="text-gray-500 w-32 shrink-0">Kontak Darurat:</span><span class="font-medium text-gray-800" id="modal-patient-emergency"></span></div>
+                            <div class="flex mb-3"><span class="text-gray-500 w-32 shrink-0">Alergi:</span><span class="font-medium text-gray-800" id="modal-patient-allergies"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow mb-6">
+                    <div class="border-b border-gray-200">
+                        <nav id="tabs-container" class="flex -mb-px">
+                            <button class="tab-button tab-active py-4 px-6 text-center border-b-2 font-medium text-sm focus:outline-none" data-tab="vitals">Tanda Vital</button>
+                            <button class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 focus:outline-none" data-tab="medications">Pengobatan</button>
+                            <button class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 focus:outline-none" data-tab="actions">Tindakan</button>
+                            <button class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 focus:outline-none" data-tab="notes">Catatan</button>
+                            <button class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 focus:outline-none" data-tab="history">Riwayat</button>
+                        </nav>
+                    </div>
+                    
+                    <div class="p-4">
+                        <div id="vitals-tab" class="tab-content block"></div>
+                        <div id="medications-tab" class="tab-content hidden"></div>
+                        <div id="actions-tab" class="tab-content hidden"></div>
+                        <div id="notes-tab" class="tab-content hidden"></div>
+                        <div id="history-tab" class="tab-content hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end bg-gray-50">
+            <button id="closeModalButtonFooter" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors mr-2">Tutup</button>
+            <button id="addNewRecordFooterButton" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">Tambah Baru +</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Tambah Catatan Baru -->
+<div id="newNoteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-xl">
+        <div class="p-4 border-b">
+            <h3 class="text-xl font-semibold">Tambah Catatan Baru</h3>
+        </div>
+        <div class="p-6">
+            <form id="newNoteForm">
+                <div class="mb-4">
+                    <label for="new-note-title" class="block text-sm font-medium text-gray-700 mb-1">Judul Catatan</label>
+                    <input type="text" id="new-note-title" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label for="new-note-content" class="block text-sm font-medium text-gray-700 mb-1">Isi Catatan</label>
+                    <textarea id="new-note-content" rows="5" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="new-note-tags" class="block text-sm font-medium text-gray-700 mb-1">Tags (pisahkan dengan koma)</label>
+                    <input type="text" id="new-note-tags" placeholder="Contoh: Perawatan Luka, Edukasi" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </form>
+        </div>
+        <div class="p-4 border-t flex justify-end bg-gray-50">
+            <button id="cancelNewNoteButton" type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 mr-2">Batal</button>
+            <button id="saveNewNoteButton" type="submit" form="newNoteForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan Catatan</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Tambah Tanda Vital Baru -->
+<div id="newVitalModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-xl">
+        <div class="p-4 border-b">
+            <h3 class="text-xl font-semibold">Tambah Tanda Vital Baru</h3>
+        </div>
+        <div class="p-6">
+            <form id="newVitalForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label for="new-vital-bp" class="block text-sm font-medium text-gray-700 mb-1">Tekanan Darah</label>
+                        <input type="text" id="new-vital-bp" placeholder="Contoh: 120/80" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-vital-hr" class="block text-sm font-medium text-gray-700 mb-1">Detak Jantung (bpm)</label>
+                        <input type="number" id="new-vital-hr" placeholder="Contoh: 75" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-vital-sugar" class="block text-sm font-medium text-gray-700 mb-1">Gula Darah (mg/dL)</label>
+                        <input type="number" id="new-vital-sugar" placeholder="Contoh: 98" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                     <div class="mb-4">
+                        <label for="new-vital-spo2" class="block text-sm font-medium text-gray-700 mb-1">Saturasi Oksigen (%)</label>
+                        <input type="number" id="new-vital-spo2" placeholder="Contoh: 98" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="mb-4 md:col-span-2">
+                        <label for="new-vital-nurse" class="block text-sm font-medium text-gray-700 mb-1">Nama Perawat</label>
+                        <input type="text" id="new-vital-nurse" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="p-4 border-t flex justify-end bg-gray-50">
+            <button id="cancelNewVitalButton" type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 mr-2">Batal</button>
+            <button id="saveNewVitalButton" type="submit" form="newVitalForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan Data</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Tambah Pengobatan Baru -->
+<div id="newMedicationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-xl">
+        <div class="p-4 border-b">
+            <h3 class="text-xl font-semibold">Tambah Pengobatan Baru</h3>
+        </div>
+        <div class="p-6">
+            <form id="newMedicationForm">
+                <div class="mb-4">
+                    <label for="new-med-name" class="block text-sm font-medium text-gray-700 mb-1">Nama Obat</label>
+                    <input type="text" id="new-med-name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label for="new-med-dosage" class="block text-sm font-medium text-gray-700 mb-1">Dosis</label>
+                    <input type="text" id="new-med-dosage" placeholder="Contoh: 500 mg" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label for="new-med-frequency" class="block text-sm font-medium text-gray-700 mb-1">Frekuensi</label>
+                    <input type="text" id="new-med-frequency" placeholder="Contoh: 2x sehari" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label for="new-med-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="new-med-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option>Aktif</option>
+                        <option>Dihentikan</option>
+                        <option>Sesuai Kebutuhan</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="p-4 border-t flex justify-end bg-gray-50">
+            <button id="cancelNewMedicationButton" type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 mr-2">Batal</button>
+            <button id="saveNewMedicationButton" type="submit" form="newMedicationForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan Obat</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Tambah Tindakan Baru -->
+<div id="newActionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-xl">
+        <div class="p-4 border-b">
+            <h3 class="text-xl font-semibold">Tambah Catatan Tindakan</h3>
+        </div>
+        <div class="p-6">
+            <form id="newActionForm">
+                <div class="mb-4">
+                    <label for="new-action-nurse" class="block text-sm font-medium text-gray-700 mb-1">Nama Perawat</label>
+                    <input type="text" id="new-action-nurse" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label for="new-action-type" class="block text-sm font-medium text-gray-700 mb-1">Jenis Tindakan</label>
+                    <textarea id="new-action-type" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="new-action-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="new-action-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option>Selesai</option>
+                        <option>Belum Selesai</option>
+                        <option>Berlangsung</option>
+                    </select>
+                </div>
+                 <div class="mb-4">
+                    <label for="new-action-followup" class="block text-sm font-medium text-gray-700 mb-1">Rencana Tindak Lanjut</label>
+                    <textarea id="new-action-followup" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="p-4 border-t flex justify-end bg-gray-50">
+            <button id="cancelNewActionButton" type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 mr-2">Batal</button>
+            <button id="saveNewActionButton" type="submit" form="newActionForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan Tindakan</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Edit Jadwal Kunjungan -->
+<div id="editVisitModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-xl">
+        <div class="p-4 border-b">
+            <h3 class="text-xl font-semibold">Edit Jadwal Kunjungan</h3>
+        </div>
+        <div class="p-6">
+            <form id="editVisitForm">
+                <input type="hidden" id="edit-visit-id">
+                <div class="mb-4">
+                    <label for="edit-visit-task" class="block text-sm font-medium text-gray-700 mb-1">Tindakan</label>
+                    <textarea id="edit-visit-task" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="edit-visit-status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="edit-visit-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option>Dijadwalkan</option>
+                        <option>Dalam Perjalanan</option>
+                        <option>Selesai</option>
+                        <option>Dibatalkan</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="p-4 border-t flex justify-end bg-gray-50">
+            <button id="cancelEditVisitButton" type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 mr-2">Batal</button>
+            <button id="saveEditVisitButton" type="submit" form="editVisitForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan Perubahan</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Jadwal Kunjungan Baru -->
+<div id="newVisitModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-xl">
+        <div class="p-4 border-b">
+            <h3 class="text-xl font-semibold">Jadwal Kunjungan Baru</h3>
+        </div>
+        <div class="p-6">
+            <form id="newVisitForm">
+                <div class="mb-4">
+                    <label for="new-visit-patient" class="block text-sm font-medium text-gray-700 mb-1">Pilih Pasien</label>
+                    <select id="new-visit-patient" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></select>
+                </div>
+                <div class="mb-4">
+                    <label for="new-visit-time" class="block text-sm font-medium text-gray-700 mb-1">Waktu</label>
+                    <input type="time" id="new-visit-time" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                 <div class="mb-4">
+                    <label for="new-visit-task" class="block text-sm font-medium text-gray-700 mb-1">Tindakan</label>
+                    <textarea id="new-visit-task" rows="3" required class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="p-4 border-t flex justify-end bg-gray-50">
+            <button id="cancelNewVisitButton" type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 mr-2">Batal</button>
+            <button id="saveNewVisitButton" type="submit" form="newVisitForm" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Jadwalkan Kunjungan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Link ke Pustaka JavaScript Eksternal -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/locale/id.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/plugin/isSameOrAfter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/plugin/isToday.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/plugin/utc.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/plugin/timezone.min.js"></script>
+<!-- Link ke file JavaScript kustom -->
+<script src="script.js"></script>
+
+</body>
+</html>
