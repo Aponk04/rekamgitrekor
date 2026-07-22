@@ -340,23 +340,26 @@
     </div>
 
     <script type="module">
-        // Import Firebase Functions via CDN ES Modules
+      
+       // Import Firebase App
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, updateDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // Firebase Configuration
+        // Import Realtime Database
+        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        
+        // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyBY60Si-1t1Zbsj63Iep2Y7qbN5dj-DTao",
             authDomain: "no-surat-5cb50.firebaseapp.com",
+            // Tambahkan databaseURL jika Realtime DB Anda memerlukannya (biasanya format: https://no-surat-5cb50-default-rtdb.firebaseio.com)
+            databaseURL: "https://no-surat-5cb50-default-rtdb.asia-southeast1.firebasedatabase.app", 
             projectId: "no-surat-5cb50",
             storageBucket: "no-surat-5cb50.firebasestorage.app",
             messagingSenderId: "822136780141",
             appId: "1:822136780141:web:ea7e4db21214d3b4c59664"
         };
-
-        // Initialize Firebase
+        
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        const db = getDatabase(app); // Menggunakan Realtime Database
 
         let currentTab = 'masuk'; // 'masuk' or 'keluar'
         
