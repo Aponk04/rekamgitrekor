@@ -369,14 +369,19 @@
             keluar: []
         };
 
+
+
+
         // Sinkronisasi data Firestore Real-time
-        onSnapshot(collection(db, "arsip_surat"), (snapshot) => {
+       const arsipRef = ref(db, 'arsip_surat');
+        onValue(arsipRef, (snapshot) => {
             mailData.masuk = [];
             mailData.keluar = [];
             
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                data.id = doc.id; // Simpan ID Document Firestore
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                data.id = childSnapshot.key; // Simpan ID/Key dari Realtime DB
+                
                 if (data.jenis === 'masuk') {
                     mailData.masuk.push(data);
                 } else if (data.jenis === 'keluar') {
@@ -384,11 +389,12 @@
                 }
             });
 
-            // Re-render UI jika user sudah login
             if (sessionStorage.getItem('pkm_logged_in') === 'true') {
                 renderDashboard();
             }
         });
+
+
 
         // Check authentication state on page load
         window.addEventListener('DOMContentLoaded', () => {
@@ -582,6 +588,7 @@
         };
 
         // Firebase Save & Update Data Action
+      
         window.handleSaveMail = async function(e) {
             e.preventDefault();
             const editId = document.getElementById('editMailId').value;
@@ -594,22 +601,32 @@
                 perihal: document.getElementById('perihal').value,
                 sifat: document.getElementById('sifatSurat').value,
                 namaFile: document.getElementById('namaFile').value || 'Dokumen_Arsip.pdf',
-                timestamp: new Date()
+                timestamp: Date.now()
             };
 
             try {
                 if (editId) {
-                    await updateDoc(doc(db, "arsip_surat", editId), newItem);
+                    // Update data yang sudah ada
+                    const itemRef = ref(db, 'arsip_surat/' + editId);
+                    await update(itemRef, newItem);
                 } else {
-                    await addDoc(collection(db, "arsip_surat"), newItem);
+                    // Tambah data baru
+                    const listRef = ref(db, 'arsip_surat');
+                    const newRef = push(listRef);
+                    await set(newRef, newItem);
                 }
                 closeModal();
-                showCustomModal('Berhasil', 'Data arsip surat berhasil disimpan ke database Firebase.', 'success', [{ text: 'OK', class: 'bg-emerald-600 text-white hover:bg-emerald-700', onclick: 'closeCustomModal()' }]);
+                showCustomModal('Berhasil', 'Data arsip surat berhasil disimpan ke Realtime Database.', 'success', [{ text: 'OK', class: 'bg-emerald-600 text-white hover:bg-emerald-700', onclick: 'closeCustomModal()' }]);
             } catch (error) {
                 console.error("Error writing document: ", error);
                 showCustomModal('Gagal', 'Terjadi kesalahan saat menyimpan arsip.', 'warning', [{ text: 'Tutup', class: 'bg-slate-300 text-slate-800 hover:bg-slate-400', onclick: 'closeCustomModal()' }]);
             }
         };
+
+
+
+
+
 
         window.deleteMail = function(id) {
             showCustomModal(
@@ -626,14 +643,18 @@
         // Firebase Delete Action
         window.executeDelete = async function(id) {
             try {
-                await deleteDoc(doc(db, "arsip_surat", id));
+                const itemRef = ref(db, 'arsip_surat/' + id);
+                await remove(itemRef);
                 closeCustomModal();
-                showCustomModal('Terhapus', 'Arsip surat berhasil dihapus dari database.', 'success', [{ text: 'OK', class: 'bg-emerald-600 text-white hover:bg-emerald-700', onclick: 'closeCustomModal()' }]);
+                showCustomModal('Terhapus', 'Arsip surat berhasil dihapus dari Realtime Database.', 'success', [{ text: 'OK', class: 'bg-emerald-600 text-white hover:bg-emerald-700', onclick: 'closeCustomModal()' }]);
             } catch (error) {
                 console.error("Error removing document: ", error);
                 showCustomModal('Gagal', 'Gagal menghapus data arsip.', 'warning', [{ text: 'Tutup', class: 'bg-slate-300 text-slate-800 hover:bg-slate-400', onclick: 'closeCustomModal()' }]);
             }
         };
+
+
+
 
         window.previewFile = function(id) {
             const item = mailData[currentTab].find(d => d.id === id);
