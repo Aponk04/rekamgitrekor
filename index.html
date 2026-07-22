@@ -32,6 +32,7 @@
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
 
+
     <div id="authView" class="fixed inset-0 z-50 bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-emerald-100 transform transition-all">
             <div class="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 text-white text-center relative">
@@ -355,7 +356,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyBY60Si-1t1Zbsj63Iep2Y7qbN5dj-DTao",
             authDomain: "no-surat-5cb50.firebaseapp.com",
-    
+            // Tambahkan databaseURL jika Realtime DB Anda memerlukannya (biasanya format: https://no-surat-5cb50-default-rtdb.firebaseio.com)
             databaseURL: "https://no-surat-5cb50-default-rtdb.asia-southeast1.firebasedatabase.app", 
             projectId: "no-surat-5cb50",
             storageBucket: "no-surat-5cb50.firebasestorage.app",
@@ -368,7 +369,7 @@
 
         let currentTab = 'masuk'; // 'masuk' or 'keluar'
         
-        // Data  Real-Time
+        // Data akan dirender dari Firestore secara Real-Time
         let mailData = {
             masuk: [],
             keluar: []
@@ -377,7 +378,7 @@
 
 
 
-        // Sinkronisasi Real-time
+        // Sinkronisasi data Firestore Real-time
        const arsipRef = ref(db, 'arsip_surat');
         onValue(arsipRef, (snapshot) => {
             mailData.masuk = [];
@@ -708,14 +709,145 @@
             document.getElementById('previewModal').classList.add('hidden');
         };
 
+
+
+
+        // Fungsi utama untuk memanggil modal pilihan Cetak/Ekspor
         window.exportData = function() {
             showCustomModal(
-                'Ekspor Laporan Arsip',
-                `Berhasil menyiapkan rekapitulasi Arsip Surat ${currentTab === 'masuk' ? 'Masuk' : 'Keluar'} UPTD Puskesmas Kota-2 untuk dicetak.`,
+                'Cetak / Ekspor Laporan',
+                `Pilih format keluaran untuk rekapitulasi Arsip Surat ${currentTab === 'masuk' ? 'Masuk' : 'Keluar'}.`,
                 'success',
-                [{ text: 'Unduh Rekap (CSV/PDF)', class: 'bg-emerald-600 text-white hover:bg-emerald-700', onclick: 'closeCustomModal()' }]
+                [
+                    { text: 'Batal', class: 'bg-slate-100 text-slate-700 hover:bg-slate-200', onclick: 'closeCustomModal()' },
+                    { text: 'Unduh CSV', class: 'bg-blue-600 text-white hover:bg-blue-700', onclick: 'executeCSV()' },
+                    { text: 'Cetak (Print)', class: 'bg-emerald-600 text-white hover:bg-emerald-700', onclick: 'executePrint()' }
+                ]
             );
         };
+
+        // Fungsi Eksekusi Cetak (Membuka Tab Print Baru)
+        window.executePrint = function() {
+            closeCustomModal();
+            const list = mailData[currentTab];
+            
+            if(list.length === 0) {
+                showCustomModal('Kosong', 'Tidak ada data arsip untuk dicetak.', 'warning', [{ text: 'Tutup', class: 'bg-slate-300 text-slate-800', onclick: 'closeCustomModal()' }]);
+                return;
+            }
+
+            // Membuat kerangka HTML khusus untuk tampilan Print
+            let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Cetak Arsip Surat ${currentTab === 'masuk' ? 'Masuk' : 'Keluar'}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; color: #333; }
+                        h2, h3 { text-align: center; margin: 5px 0; color: #000; }
+                        h3 { margin-bottom: 20px; font-weight: normal; }
+                        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+                        th, td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; }
+                        th { background-color: #f2f2f2; font-weight: bold; text-transform: uppercase; font-size: 11px; }
+                    </style>
+                </head>
+                <body>
+                    <h2>REKAPITULASI ARSIP SURAT ${currentTab === 'masuk' ? 'MASUK' : 'KELUAR'}</h2>
+                    <h3>UPTD PUSKESMAS KOTA-2</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 30px; text-align: center;">No</th>
+                                <th style="width: 120px;">No. Agenda</th>
+                                <th style="width: 100px;">Tanggal Surat</th>
+                                <th style="width: 150px;">Nomor Surat</th>
+                                <th>${currentTab === 'masuk' ? 'Asal Surat' : 'Tujuan Surat'}</th>
+                                <th>Perihal</th>
+                                <th style="width: 70px;">Sifat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Memasukkan data ke dalam tabel HTML
+            list.forEach((item, idx) => {
+                html += `<tr>
+                    <td style="text-align: center;">${idx + 1}</td>
+                    <td>${item.noAgenda}</td>
+                    <td>${formatDate(item.tglSurat)}</td>
+                    <td>${item.noSurat}</td>
+                    <td>${item.asalTujuan}</td>
+                    <td>${item.perihal}</td>
+                    <td>${item.sifat}</td>
+                </tr>`;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                    <p style="text-align: right; margin-top: 30px; font-style: italic;">Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+                </body>
+                </html>
+            `;
+
+            // Membuka jendela baru dan memicu fungsi Print bawaan browser
+            const printWin = window.open('', '', 'width=900,height=650');
+            printWin.document.write(html);
+            printWin.document.close();
+            printWin.focus();
+            
+            // Beri sedikit jeda agar CSS/HTML selesai dimuat sebelum print dialog muncul
+            setTimeout(() => {
+                printWin.print();
+                printWin.close();
+            }, 300);
+        };
+
+        // Fungsi Eksekusi Unduh File CSV (Excel)
+        window.executeCSV = function() {
+            closeCustomModal();
+            const list = mailData[currentTab];
+            
+            if(list.length === 0) {
+                showCustomModal('Kosong', 'Tidak ada data arsip untuk diekspor.', 'warning', [{ text: 'Tutup', class: 'bg-slate-300 text-slate-800', onclick: 'closeCustomModal()' }]);
+                return;
+            }
+
+            // Menambahkan BOM agar karakter khusus terbaca dengan baik di Microsoft Excel
+            let csvContent = "\uFEFF"; 
+            
+            // Header Tabel
+            let header = ["No", "No. Agenda", "Tanggal Surat", "Nomor Surat", currentTab === 'masuk' ? 'Asal Surat' : 'Tujuan Surat', "Perihal", "Sifat"];
+            csvContent += header.join(",") + "\r\n";
+
+            // Baris Data
+            list.forEach((item, idx) => {
+                // Teks dibungkus tanda kutip agar koma (,) di dalam kalimat perihal/nama instansi tidak memutus kolom Excel
+                let row = [
+                    idx + 1,
+                    `"${item.noAgenda}"`,
+                    `"${formatDate(item.tglSurat)}"`,
+                    `"${item.noSurat}"`,
+                    `"${item.asalTujuan}"`,
+                    `"${item.perihal.replace(/"/g, '""')}"`, // Menghindari error jika ada tanda kutip di dalam kalimat perihal
+                    `"${item.sifat}"`
+                ];
+                csvContent += row.join(",") + "\r\n";
+            });
+
+            // Trigger Download File di Browser
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Rekap_Arsip_${currentTab}_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+
+
 
         window.showCustomModal = function(title, message, type, buttons) {
             const modal = document.getElementById('customModal');
